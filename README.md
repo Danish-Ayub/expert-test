@@ -1,73 +1,79 @@
-# Welcome to your Lovable project
+Bug Fixes Documentation – Supabase Functions & Lead Capture
+Overview
+This document outlines key fixes applied to the Supabase function deployment, the lead capture form, and the email personalization function.
 
-## Project info
+Critical Fixes Implemented
+1. Config.toml Deployment Errors
+File: config.toml
+Severity: Critical
+Status: ✅ Fixed
 
-**URL**: https://lovable.dev/projects/94b52f1d-10a5-4e88-9a9c-5c12cf45d83a
+Problem
+auth.sms.test_otp was a plain string instead of the required map format, causing parsing errors.
 
-## How can I edit this code?
+The [[edge_runtime.policies]] block was invalid and blocked function deployment.
 
-There are several ways of editing your application.
+Root Cause
+The config expected a map for test_otp, but received a string.
 
-**Use Lovable**
+edge_runtime.policies is not a supported key in the current config schema.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/94b52f1d-10a5-4e88-9a9c-5c12cf45d83a) and start prompting.
+Fix
+Changed test_otp to a map with phone numbers as keys, e.g.:
 
-Changes made via Lovable will be committed automatically to this repo.
+toml
+Copy
+Edit
+[auth.sms.test_otp]
+"+15555555555" = "123456"
+Removed the entire [[edge_runtime.policies]] block.
 
-**Use your preferred IDE**
+Impact
+✅ Config parses correctly
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+✅ Functions deploy without errors
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. Duplicate Function Invocation in Lead Capture Form
+File: LeadCaptureForm.tsx
+Severity: Medium
+Status: ✅ Fixed
 
-Follow these steps:
+Problem
+The supabase.functions.invoke('send-confirmation', ...) was called twice sequentially on form submission, resulting in redundant API calls and potential duplicate emails.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Root Cause
+A copy-paste mistake caused the same function call to appear twice with no difference.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Fix
+Removed the second, redundant call to supabase.functions.invoke to ensure only a single email is sent per submission.
 
-# Step 3: Install the necessary dependencies.
-npm i
+Impact
+✅ Eliminates duplicate emails
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+✅ Simplifies code and improves efficiency
 
-**Edit a file directly in GitHub**
+✅ No change to user experience
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. AI Email Generation Code Update
+File: send-confirmation function (Deno)
+Severity: Medium
+Status: ✅ Fixed
 
-**Use GitHub Codespaces**
+Problem
+The AI response was incorrectly accessed at choices[1], which caused errors or undefined content.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Root Cause
+OpenAI API responses use choices[0] for the primary message, not choices[1].
 
-## What technologies are used for this project?
+Fix
+Updated to use choices[0] for email content.
 
-This project is built with:
+Added fallback static content in case AI generation fails.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Impact
+✅ Personalized emails generate correctly
 
-## How can I deploy this project?
+✅ Reliable fallback prevents broken emails
 
-Simply open [Lovable](https://lovable.dev/projects/94b52f1d-10a5-4e88-9a9c-5c12cf45d83a) and click on Share -> Publish.
+✅ Improved logging for debugging
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
